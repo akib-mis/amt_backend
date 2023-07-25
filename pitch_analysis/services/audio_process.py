@@ -37,9 +37,12 @@ class Process:
         self.y_pure, self.y_notes, self.y_vol = self.estimate_note_pitch_volume(
             harmonic=self.harmonic, onset_boundaries=self.onset_boundaries
         )
+        y_midi_notes = librosa.note_to_midi(self.y_notes)
+        median = np.median(y_midi_notes)
+        q_y_notes = self.quantize_notes(midi_notes=self.y_notes, median=median)
 
         degrees = [
-            librosa.note_to_midi(note) if note != "0" else 0 for note in self.y_notes
+            librosa.note_to_midi(note) if note != "0" else 0 for note in q_y_notes
         ]
         beats_per_sec = self.beat[0] / 60
         start_times_beat = [onset * beats_per_sec for onset in self.onset_times]
@@ -177,21 +180,18 @@ class Process:
 
         return self.y_pure, self.y_notes, self.y_vol
 
-    def quantize_notes(self, midi_notes: list):
-        key_notes = []
-        i = 0
-        key_values = statistics.quantiles(midi_notes, n=8)
-        key_int = [int(values) for values in key_values]
-        lower_lim = key_int[0]
-        upper_lim = key_int[-1]
+    def quantize_notes(self, midi_notes: list, median: float):
+        upper_limit = int(median + 6)
+        lower_limit = int(median - 6)
+        octave_range = []
+        quantized_note = []
+        for i in range(lower_limit, upper_limit):
+            octave_range.append(librosa.midi_to_note(i))
 
-        for i in range(len(midi_notes) - 1):
-            act_note = midi_notes[i]
-            if act_note < lower_lim or act_note > upper_lim:
-                for j in range(i + 1, len(midi_notes) - 1):
-                    other_note = midi_notes[j]
-                    if other_note >= lower_lim and other_note <= upper_lim:
-                        act_note = other_note
-                        break
-            key_notes.append(act_note)
-        return key_notes
+        for note in midi_notes:
+            note = note[:-1]
+            for oct in octave_range:
+                if note in oct:
+                    quantized_note.append(oct)
+                    break
+        return quantized_note

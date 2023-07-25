@@ -8,7 +8,7 @@ from fastapi import File, UploadFile, status
 from fastapi.responses import JSONResponse
 from midiutil.MidiFile import MIDIFile
 from basic_pitch.inference import predict_and_save
-
+from load_dotenv import load_dotenv
 from audio_to_midi.crud.file_info_dal import get_file_dal
 from audio_to_midi.services.file_service import FileService
 from audio_to_midi.schemas.file_schemas import FileCreate, FileUpdate
@@ -17,6 +17,7 @@ from user_acc.app import User
 from pitch_analysis.services.audio_process import Process
 import librosa
 
+load_dotenv()
 
 class MidiGenerator:
     def __init__(
@@ -43,7 +44,7 @@ class MidiGenerator:
 
     def _get_path_of_user(self):
         base_dir = os.getenv(
-            "AMT_UPLOAD_DIR", "/home/akib/Desktop/AI_projects/AMT_uploads"
+            "AMT_UPLOAD_DIR", "/home/mir/amt_backend/amt_uploads"
         )
         self.user_dir = os.path.join(
             base_dir,
@@ -111,7 +112,7 @@ class MidiGenerator:
             self.midi_obj.addTempo(self.track, self.elapsed_time, beat)
 
         self.midi_obj.addTempo(
-            self.track, self.elapsed_time, tempo=tempo
+            self.track, self.elapsed_time, tempo=beat
         )  # need_optimization
 
         for pitch, time, duration, vol in zip(

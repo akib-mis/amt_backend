@@ -89,7 +89,7 @@ async def generate_pitch_to_midi(
 
 
 @gen_midi_router.post(
-    "/audio",
+    "/audio_upload",
     dependencies=[Depends(app_verified_user)],
     status_code=status.HTTP_201_CREATED,
 )
@@ -124,16 +124,16 @@ async def upload_and_save_audio(
     status_code=status.HTTP_201_CREATED,
 )
 async def generate_note_to_midi(
-    audio_path: str,
+    file_name: str,
     name: Union[str, None] = None,
     user: User = Depends(app_verified_user),
-    tempo: Optional[int] = 22,
+    tempo: Optional[int] = None,
 ):
     try:
         midi_gen = MidiGenerator(user=user)
-        midi_gen.audio_to_midi(audio_path=audio_path, tempo=tempo)
+        midi_gen.audio_to_midi(audio_path=file_name, tempo=tempo)
         if not name:
-            name = audio_path.split(".")[0]
+            name = file_name.split(".")[0]
         resp = await midi_gen.save_midi(name=name)
         return resp
     except Exception as e:
