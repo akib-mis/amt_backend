@@ -12,6 +12,9 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from base.config import SECRET
 from user_acc.models.user_acc import UserApp
 from user_acc.services.user_db import get_user_db
+from load_dotenv import load_dotenv
+
+load_dotenv()
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[UserApp, uuid.UUID]):
