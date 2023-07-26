@@ -20,16 +20,30 @@ class UserManager(UUIDIDMixin, BaseUserManager[UserApp, uuid.UUID]):
 
     async def on_after_register(self, user: UserApp, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
-        parent_dir = os.getcwd()
-        base_dir = os.path.join(parent_dir, "midi_folder")
+        base_dir = os.getenv("AMT_UPLOAD_DIR", "/home/mir/amt_backend/amt_uploads")
         dir_name = f"{user.name}_{str(user.id)[-4:]}"
+        # if not os.path.exists(os.path.join(base_dir, dir_name)):
+        #     os.mkdir(os.path.join(base_dir, dir_name))
+        print(os.path.join(base_dir, dir_name))
+        try:
+            if not os.path.exists(os.path.join(base_dir, dir_name)):
+                os.makedirs(os.path.join(base_dir, dir_name))
+                print(
+                    f"Directory '{os.path.join(base_dir, dir_name)}' created successfully."
+                )
+            else:
+                print(f"Directory '{os.path.join(base_dir, dir_name)}' already exists.")
+        except Exception as e:
+            print(f"Error occurred: {e}")
 
-        os.mkdir(os.path.join(base_dir, dir_name))
-
-    async def on_after_forgot_password(self, user: UserApp, token: str, request: Optional[Request] = None):
+    async def on_after_forgot_password(
+        self, user: UserApp, token: str, request: Optional[Request] = None
+    ):
         print(f"User {user.id} has forgot their password. Reset token: {token}")
 
-    async def on_after_request_verify(self, user: UserApp, token: str, request: Optional[Request] = None):
+    async def on_after_request_verify(
+        self, user: UserApp, token: str, request: Optional[Request] = None
+    ):
         print(f"Verification requested for user {user.id}. Verification token: {token}")
 
 
