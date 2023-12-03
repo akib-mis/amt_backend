@@ -63,7 +63,7 @@ async def download_file(
 
 
 @gen_midi_router.post(
-    "/pitch",
+    "/manual_pitch",
     dependencies=[Depends(app_verified_user)],
     status_code=status.HTTP_201_CREATED,
 )
@@ -119,11 +119,40 @@ async def upload_and_save_audio(
 
 
 @gen_midi_router.post(
-    "/notes",
+    "/raw_notes",
     dependencies=[Depends(app_verified_user)],
     status_code=status.HTTP_201_CREATED,
 )
 async def generate_note_to_midi(
+    file_name: str,
+    name: Union[str, None] = None,
+    user: User = Depends(app_verified_user),
+    tempo: Optional[int] = None,
+):
+    try:
+        midi_gen = MidiGenerator(user=user)
+        midi_gen.audio_to_midi(audio_path=file_name, tempo=tempo)
+        if not name:
+            name = file_name.split(".")[0]
+        resp = await midi_gen.save_midi(name=name)
+        return resp
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "message": "File midi generation error",
+                "error": str(e),
+                "location": "generate_pitch_to_midi",
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@gen_midi_router.post(
+    "/processed_notes",
+    dependencies=[Depends(app_verified_user)],
+    status_code=status.HTTP_201_CREATED,
+)
+async def process_note_to_midi(
     file_name: str,
     name: Union[str, None] = None,
     user: User = Depends(app_verified_user),

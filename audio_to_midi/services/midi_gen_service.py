@@ -19,6 +19,7 @@ import librosa
 
 load_dotenv()
 
+
 class MidiGenerator:
     def __init__(
         self,
@@ -43,9 +44,7 @@ class MidiGenerator:
         self._get_path_of_user()
 
     def _get_path_of_user(self):
-        base_dir = os.getenv(
-            "AMT_UPLOAD_DIR", "/home/mir/amt_backend/amt_uploads"
-        )
+        base_dir = os.getenv("AMT_UPLOAD_DIR", "/home/mir/amt_backend/amt_uploads")
         self.user_dir = os.path.join(
             base_dir,
             f"{self.user.name}_{str(self.user.id)[-4:]}",
@@ -232,7 +231,7 @@ class MidiGenerator:
     def audio_to_midi(
         self,
         audio_path: str,
-        tempo: Optional[int] = 22,
+        tempo: Optional[int],
     ):
         if not self.user_dir:
             self._get_path_of_user()
@@ -242,6 +241,9 @@ class MidiGenerator:
         )
         try:
             y, sr = librosa.load(complete_path, sr=None)
+            if not tempo:
+                tempo = int(librosa.beat.tempo(sr=sr))
+
             proc = Process(y=y, sr=sr)
             (
                 degrees,

@@ -6,7 +6,7 @@ import math
 import statistics
 
 
-class Process:
+class PitchProcess:
     def __init__(
         self,
         y: np.ndarray,
@@ -24,9 +24,7 @@ class Process:
         self.start_bpm = start_bpm
         self.frame_size = 2**frame_size_power
         self.hop_length = int(hop_ratio * self.frame_size)
-        self.tempo = int(
-            librosa.beat.tempo(y=self.y, sr=self.sr, start_bpm=self.start_bpm)
-        )
+        # self.tempo = librosa.beat.tempo(y=self.y, sr=self.sr, start_bpm=self.start_bpm)
 
     def construct_default(self):
         self.harmonic = self.cleaning_audio(y=self.y)
@@ -36,7 +34,12 @@ class Process:
             self.onset_times,
             self.beat,
         ) = self.onset_detection(harmonic=self.harmonic)
-        self.y_pure, self.y_notes, self.y_vol = self.estimate_note_pitch_volume(
+        (
+            self.y_pure,
+            self.y_notes,
+            self.y_vol,
+            self.freq,
+        ) = self.estimate_note_pitch_volume(
             harmonic=self.harmonic, onset_boundaries=self.onset_boundaries
         )
         y_midi_notes = librosa.note_to_midi(self.y_notes)
@@ -63,6 +66,8 @@ class Process:
             duration_in_beat,
             norm_vol,
             self.beat[0],
+            self.freq,
+            self.onset_times,
         )
 
     def cleaning_audio(self, y: np.ndarray):
@@ -133,7 +138,7 @@ class Process:
         n1 = onset_samples[i + 1]
         f0 = self.estimate_pitch(x[n0:n1], sr)
         vol = self.estimate_vol(x[n0:n1], sr)
-        return self.generate_sine(f0, sr, n1 - n0), librosa.hz_to_note(f0), vol
+        return self.generate_sine(f0, sr, n1 - n0), librosa.hz_to_note(f0), vol, f0
 
     def estimate_note_pitch_volume(
         self,
@@ -179,21 +184,27 @@ class Process:
             )[2]
             for i in range(len(this_onset_boundaries) - 1)
         ]
+        self.freq = [
+            self.estimate_pitch_and_generate_sine(
+                this_harmonic, this_onset_boundaries, i, sr=self.sr
+            )[3]
+            for i in range(len(this_onset_boundaries) - 1)
+        ]
 
-        return self.y_pure, self.y_notes, self.y_vol
+        return self.y_pure, self.y_notes, self.y_vol, self.freq
 
-    # def quantize_notes(self, midi_notes: list, median: float):
-    #     upper_limit = int(median + 6)
-    #     lower_limit = int(median - 6)
-    #     octave_range = []
-    #     quantized_note = []
-    #     for i in range(lower_limit, upper_limit):
-    #         octave_range.append(librosa.midi_to_note(i))
+    def quantize_notes(self, midi_notes: list, median: float):
+        upper_limit = int(median + 6)
+        lower_limit = int(median - 6)
+        octave_range = []
+        quantized_note = []
+        for i in range(lower_limit, upper_limit):
+            octave_range.append(librosa.midi_to_note(i))
 
-    #     for note in midi_notes:
-    #         note = note[:-1]
-    #         for oct in octave_range:
-    #             if note in oct:
-    #                 quantized_note.append(oct)
-    #                 break
-    #     return quantized_note
+        for note in midi_notes:
+            note = note[:-1]
+            for oct in octave_range:
+                if note in oct:
+                    quantized_note.append(oct)
+                    break
+        return quantized_note
