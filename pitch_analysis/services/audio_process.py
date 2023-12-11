@@ -36,15 +36,20 @@ class Process:
             self.onset_times,
             self.beat,
         ) = self.onset_detection(harmonic=self.harmonic)
-        self.y_pure, self.y_notes, self.y_vol = self.estimate_note_pitch_volume(
+        (
+            self.y_pure,
+            self.y_notes,
+            self.y_vol,
+            self.freq,
+        ) = self.estimate_note_pitch_volume(
             harmonic=self.harmonic, onset_boundaries=self.onset_boundaries
         )
-        y_midi_notes = librosa.note_to_midi(self.y_notes)
-        median = np.median(y_midi_notes)
-        q_y_notes = self.quantize_notes(midi_notes=self.y_notes, median=median)
+        # y_midi_notes = librosa.note_to_midi(self.y_notes)
+        # median = np.median(y_midi_notes)
+        # q_y_notes = self.quantize_notes(midi_notes=self.y_notes, median=median)
 
         degrees = [
-            librosa.note_to_midi(note) if note != "0" else 0 for note in q_y_notes
+            librosa.note_to_midi(note) if note != "0" else 0 for note in self.y_notes
         ]
         beats_per_sec = self.beat[0] / 60
         start_times_beat = [onset * beats_per_sec for onset in self.onset_times]
@@ -63,6 +68,9 @@ class Process:
             duration_in_beat,
             norm_vol,
             self.beat[0],
+            self.freq,
+            self.y_notes,
+            self.onset_times,
         )
 
     def cleaning_audio(self, y: np.ndarray):
@@ -133,7 +141,7 @@ class Process:
         n1 = onset_samples[i + 1]
         f0 = self.estimate_pitch(x[n0:n1], sr)
         vol = self.estimate_vol(x[n0:n1], sr)
-        return self.generate_sine(f0, sr, n1 - n0), librosa.hz_to_note(f0), vol
+        return self.generate_sine(f0, sr, n1 - n0), librosa.hz_to_note(f0), vol, f0
 
     def estimate_note_pitch_volume(
         self,
@@ -180,7 +188,13 @@ class Process:
             for i in range(len(this_onset_boundaries) - 1)
         ]
 
-        return self.y_pure, self.y_notes, self.y_vol
+        self.freq = [
+            self.estimate_pitch_and_generate_sine(
+                harmonic, onset_boundaries, i, sr=self.sr
+            )[3]
+            for i in range(len(onset_boundaries) - 1)
+        ]
+        return self.y_pure, self.y_notes, self.y_vol, self.freq
 
     # def quantize_notes(self, midi_notes: list, median: float):
     #     upper_limit = int(median + 6)
