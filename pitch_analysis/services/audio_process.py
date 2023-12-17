@@ -2,11 +2,13 @@ import librosa
 import numpy as np
 import pandas as pd
 from typing import Union
-import math
+import math 
 import statistics
 
 
 class Process:
+    """ This class is used to process the raw audio input and returns the 
+    pure notes, volume and frequecies. """
     def __init__(
         self,
         y: np.ndarray,
@@ -17,7 +19,7 @@ class Process:
         start_bpm: Union[int, None] = 30,
         hop_ratio: Union[float, None] = 0.5,
     ):
-        self.y = y
+        self.y = y        
         self.sr = sr
         self.delta = delta
         self.wait = wait
@@ -27,6 +29,7 @@ class Process:
         self.tempo = int(
             librosa.beat.tempo(y=self.y, sr=self.sr, start_bpm=self.start_bpm)
         )
+
 
     def construct_default(self):
         self.harmonic = self.cleaning_audio(y=self.y)
