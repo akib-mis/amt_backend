@@ -22,7 +22,7 @@ class Time_quantization:
             while runnig_index>=0:
 
                 if self.corrected_start_time_grid[runnig_index] == self.corrected_start_time_grid[runnig_index-1] and self.corrected_start_time_grid[runnig_index-1]!=0:
-                    self.corrected_start_time_grid[runnig_index-1]=self.corrected_start_time_grid[runnig_index-1]-1
+                    self.corrected_start_time_grid[runnig_index-1] = self.corrected_start_time_grid[runnig_index-1]-1
                     runnig_index = runnig_index-1
 
                 else:
